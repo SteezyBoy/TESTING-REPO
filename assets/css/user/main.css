@@ -91,12 +91,6 @@ header {
 }
 
 
-    35%  { transform: scale(1.28); }
-    65%  { transform: scale(0.93); }
-    85%  { transform: scale(1.07); }
-    100% { transform: scale(1); }
-}
-
 #cart-count {
     position: absolute; top: -5px; right: -5px;
     background: var(--green);
