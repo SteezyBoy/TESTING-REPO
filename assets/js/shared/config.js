@@ -3,7 +3,7 @@
 // ================================================================
 
 const APPS_SCRIPT_FALLBACK_URL =
-    "https://script.google.com/macros/s/AKfycbxnYL1kz7S7rG9TKm6xT-62uShgFRP85bzkEzcfSmk-X9nVAOD9RxkdMGInATqTRS7rSA/exec";
+    "https://script.google.com/macros/s/AKfycbyljbjiNuBEKBVteHQNVjFIFTsfc31e7f6lPVDmWfGcg5dg2VRiYv4OGvtV5rnmCaJp2g/exec";
 
 const STORAGE_KEYS = {
     adminUrl:      "hn_admin_url",

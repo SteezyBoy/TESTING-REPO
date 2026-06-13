@@ -1,50 +1,3 @@
-/* DEPRECATED: File ini sudah dipindah ke assets/css/shared/variables.css dan assets/css/user/main.css */
-
-/* ==================== CSS VARIABLES (Light & Dark) ==================== */
-:root {
-    --bg: #f4f7fb;
-    --surface: #ffffff;
-    --surface2: #f8fafc;
-    --border: #f1f5f9;
-    --border2: #e2e8f0;
-    --text-primary: #1e293b;
-    --text-secondary: #334155;
-    --text-muted: #64748b;
-    --text-light: #94a3b8;
-    --accent: #ff5400;
-    --accent2: #ff7b00;
-    --green: #10b981;
-    --green2: #059669;
-    --tag-bg: #dcfce7;
-    --tag-color: #15803d;
-    --skeleton: #e2e8f0;
-    --skeleton-shine: #f8fafc;
-    --shadow-sm: 0 5px 15px rgba(0,0,0,0.06);
-    --shadow-md: 0 10px 30px rgba(0,0,0,0.08);
-    --shadow-lg: 0 15px 40px rgba(0,0,0,0.12);
-    --shadow-accent: 0 10px 25px rgba(255,84,0,0.4);
-    --header-gradient: linear-gradient(135deg, #ff7b00, #ff5400);
-    --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-[data-theme="dark"] {
-    --bg: #0f172a;
-    --surface: #1e293b;
-    --surface2: #0f172a;
-    --border: #1e293b;
-    --border2: #334155;
-    --text-primary: #f1f5f9;
-    --text-secondary: #e2e8f0;
-    --text-muted: #94a3b8;
-    --text-light: #64748b;
-    --tag-bg: #064e3b;
-    --tag-color: #34d399;
-    --skeleton: #1e293b;
-    --skeleton-shine: #334155;
-    --shadow-sm: 0 5px 15px rgba(0,0,0,0.3);
-    --shadow-md: 0 10px 30px rgba(0,0,0,0.4);
-    --shadow-lg: 0 15px 40px rgba(0,0,0,0.5);
-}
 
 /* ==================== BASE ==================== */
 * {
@@ -137,49 +90,7 @@ header {
     transform: scale(1.1);
 }
 
-/* ==================== FAVORITES FAB ==================== */
-.fav-fab {
-    position: fixed;
-    bottom: 90px;
-    right: 20px;
-    background: var(--surface);
-    border: none;
-    width: 48px; height: 48px;
-    border-radius: 50%;
-    font-size: 22px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: var(--shadow-md);
-    z-index: 99;
-    transition: var(--transition);
-}
-.fav-fab:hover { transform: scale(1.1); }
 
-/* ==================== CART ICON ==================== */
-.cart-icon {
-    position: fixed;
-    bottom: 20px; right: 20px;
-    background: var(--header-gradient);
-    color: white;
-    border: none;
-    width: 60px; height: 60px;
-    border-radius: 50%;
-    font-size: 26px;
-    display: flex; justify-content: center; align-items: center;
-    cursor: pointer;
-    box-shadow: var(--shadow-accent);
-    z-index: 1000;
-    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.cart-icon:hover {
-    transform: scale(1.05);
-    box-shadow: 0 15px 35px rgba(255,84,0,0.5);
-}
-.cart-icon.cart-pop {
-    animation: cartPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-@keyframes cartPop {
-    0%   { transform: scale(1); }
     35%  { transform: scale(1.28); }
     65%  { transform: scale(0.93); }
     85%  { transform: scale(1.07); }
@@ -230,7 +141,7 @@ header {
 }
 .sort-wrapper select:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 .sort-wrapper::after {
-    content: "▼"; position: absolute; right: 32px; bottom: 31px;
+    content: "â–¼"; position: absolute; right: 32px; bottom: 31px;
     font-size: 12px; color: var(--text-muted); pointer-events: none;
 }
 
@@ -741,31 +652,6 @@ footer h3 { color: var(--accent); margin-bottom: 8px; }
     to   { opacity: 1; transform: translateY(0); }
 }
 /* ==================== TOMBOL PANTAUAN MENU ==================== */
-.bill-fab {
-    position: fixed;
-    bottom: 150px;   /* di atas fav-fab */
-    right: 20px;
-    background: var(--surface);
-    border: none;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    font-size: 22px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: var(--shadow-md);
-    z-index: 99;
-    transition: var(--transition);
-    color: var(--accent);
-}
-.bill-fab:hover {
-    transform: scale(1.1);
-    background: var(--accent);
-    color: white;
-}
-
 /* ===== BADGE STATUS DI PANTAUAN ===== */
 .item-status-badge {
     display: inline-block;
@@ -867,149 +753,131 @@ footer h3 { color: var(--accent); margin-bottom: 8px; }
     color:white;
 }
 
-/* ==================== THANK YOU SCREEN ==================== */
-.thank-you-overlay {
-    display: none;
+/* ==================== FAB ROW (Cart + Order Status) ==================== */
+.fab-row {
     position: fixed;
-    inset: 0;
-    z-index: 10000;
-    background: linear-gradient(160deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.95) 50%, rgba(15,23,42,0.98) 100%);
-    backdrop-filter: blur(12px);
-    justify-content: center;
-    align-items: center;
-    padding: 24px;
-    box-sizing: border-box;
-    animation: thankFadeIn 0.5s ease;
-}
-@keyframes thankFadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-}
-.thank-you-content {
-    position: relative;
-    background: var(--surface);
-    border-radius: 32px;
-    padding: 40px 32px 32px;
-    max-width: 380px;
-    width: 100%;
-    text-align: center;
-    box-shadow: 0 25px 60px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,123,0,0.15);
-    animation: thankSlideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    overflow: hidden;
-}
-@keyframes thankSlideUp {
-    from { opacity: 0; transform: translateY(40px) scale(0.9); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-.thank-you-glow {
-    position: absolute;
-    top: -60px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 200px;
-    height: 200px;
-    background: radial-gradient(circle, rgba(255,123,0,0.25) 0%, transparent 70%);
-    pointer-events: none;
-}
-.thank-you-icon-ring {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 8px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    bottom: 20px;
+    right: 16px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    box-shadow: var(--shadow-accent);
+    gap: 10px;
+    z-index: 1000;
 }
-.thank-you-icon {
-    font-size: 36px;
-    line-height: 1;
-}
-.thank-you-check {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--green), var(--green2));
+
+.fab-btn {
+    background: var(--header-gradient);
     color: white;
-    font-size: 16px;
-    font-weight: 800;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 15px rgba(16,185,129,0.4);
-    animation: thankCheckPop 0.5s 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
-}
-@keyframes thankCheckPop {
-    from { opacity: 0; transform: scale(0); }
-    to   { opacity: 1; transform: scale(1); }
-}
-.thank-you-title {
-    font-size: 28px;
-    font-weight: 800;
-    color: var(--text-primary);
-    margin: 0 0 6px;
-    letter-spacing: -0.5px;
-}
-.thank-you-subtitle {
-    font-size: 14px;
-    color: var(--text-muted);
-    margin: 0;
-}
-.thank-you-brand {
+    border: none;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
     font-size: 22px;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--accent2), var(--accent));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin: 4px 0 16px;
-}
-.thank-you-message {
-    font-size: 14px;
-    color: var(--text-secondary);
-    line-height: 1.7;
-    margin: 0 0 20px;
-}
-.thank-you-divider {
     display: flex;
+    justify-content: center;
     align-items: center;
-    gap: 12px;
+    cursor: pointer;
+    box-shadow: var(--shadow-accent);
+    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+}
+.fab-btn:hover { transform: scale(1.08); box-shadow: 0 12px 30px rgba(255,84,0,.5); }
+.fab-btn.cart-pop { animation: cartPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+.fab-count {
+    position: absolute;
+    top: -4px; right: -4px;
+    background: #fff;
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 800;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,.2);
+}
+
+.status-dot {
+    position: absolute;
+    top: -4px; right: -4px;
+    background: #22c55e;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid white;
+    animation: pulse-dot 1.5s infinite;
+}
+@keyframes pulse-dot {
+    0%,100% { transform: scale(1); opacity:1; }
+    50%      { transform: scale(1.3); opacity:.7; }
+}
+
+/* ==================== TABLE DISPLAY (header) ==================== */
+.table-display {
+    display: inline-block;
+    background: rgba(255,255,255,.22);
+    backdrop-filter: blur(10px);
+    padding: 7px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 10px;
+    border: 1.5px solid rgba(255,255,255,.35);
+}
+
+/* ==================== ORDER STATUS SCREEN ==================== */
+.status-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+}
+.status-item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.status-item-qty  { font-weight: 700; color: var(--accent); margin-right: 4px; }
+.status-item-name { font-weight: 600; color: var(--text-primary); }
+.status-item-note { font-size: 12px; color: var(--text-muted); font-style: italic; }
+.status-item-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+    flex-shrink: 0;
+}
+.status-item-price { font-size: 13px; font-weight: 700; color: var(--accent); }
+
+.item-status-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+.status-waiting  { background: #fef3c7; color: #92400e; }
+.status-diproses { background: #fef9c3; color: #713f12; }
+.status-diantar  { background: #dcfce7; color: #166534; }
+.status-selesai  { background: #d1fae5; color: #065f46; }
+
+/* Summary table info */
+.summary-table-info {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 8px 14px;
     margin-bottom: 12px;
 }
-.thank-you-divider::before,
-.thank-you-divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--border2), transparent);
-}
-.thank-you-divider span {
-    font-size: 14px;
-}
-.thank-you-footer {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    margin: 0 0 24px;
-}
-.thank-you-btn {
-    width: 100%;
-    padding: 16px;
-    border: none;
-    border-radius: 16px;
-    font-size: 15px;
-    font-weight: 700;
-    color: white;
-    cursor: pointer;
-    background: linear-gradient(135deg, var(--accent2), var(--accent));
-    box-shadow: var(--shadow-accent);
-    transition: var(--transition);
-}
-.thank-you-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 30px rgba(255,84,0,0.45);
+
+@keyframes cartPop {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.28); }
+    65%  { transform: scale(0.93); }
+    85%  { transform: scale(1.07); }
+    100% { transform: scale(1); }
 }

@@ -293,10 +293,9 @@ function handleMarkPaymentPaid(data) {
   let found    = false;
   let tableNum = null;
 
-  // Set order ini jadi Lunas + status Selesai
+  // Set order ini jadi Lunas
   for (let i = 1; i < rows.length; i++) {
     if (rows[i][0] === data.orderId) {
-      sheet.getRange(i+1, 10).setValue("Selesai");
       sheet.getRange(i+1, 11).setValue("Lunas");
       sheet.getRange(i+1, 1, 1, ORDER_HEADERS.length).setBackground("#f0fdf4");
       if (!tableNum) tableNum = rows[i][2];

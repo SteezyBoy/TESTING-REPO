@@ -139,17 +139,11 @@ function buildOrderCardHtml(order) {
             <span class="item-status-small ${getItemStatusClass(it.status)}">${getItemStatusLabel(it.status)}</span>
         </div>`).join("");
 
-    // Tombol aksi — sesuai status pesanan
-    let actionBtns = "";
-    if (statusText === "Baru") {
-        actionBtns += `<button class="action-btn btn-proses" onclick="updateStatus('${safeId}','Diproses')">🍳 Diproses</button>`;
-    } else if (statusText === "Diproses") {
-        actionBtns += `<button class="action-btn btn-diantar" onclick="updateStatus('${safeId}','Diantar')">🛵 Sudah Diantar</button>`;
-    }
-    if (ps === "Menunggu Kasir") {
-        actionBtns += `<button class="action-btn btn-selesai" onclick="markOrderPaid('${safeId}')">💵 Sudah Bayar</button>`;
-    }
-    actionBtns += `<button class="action-btn btn-hapus" onclick="deleteOrder('${safeId}')">🗑 Hapus</button>`;
+    // Tombol aksi
+    const paidBtn   = ps === "Menunggu Kasir"
+        ? `<button class="action-btn btn-selesai" onclick="markOrderPaid('${safeId}')">💵 Sudah Bayar</button>` : "";
+    const diantarBtn = statusText !== "Diantar" && statusText !== "Selesai"
+        ? `<button class="action-btn btn-diantar" onclick="updateStatus('${safeId}','Diantar')">🛵 Sudah Diantar</button>` : "";
 
     return `
     <div class="order-card status-${statusClass}">
@@ -167,7 +161,13 @@ function buildOrderCardHtml(order) {
             ${itemsHtml}
             <div class="order-total-row"><span>Total</span><span>${fmt(order.total)}</span></div>
         </div>
-        <div class="order-actions">${actionBtns}</div>
+        <div class="order-actions">
+            <button class="action-btn btn-proses"  onclick="updateStatus('${safeId}','Diproses')">🍳 Diproses</button>
+            ${diantarBtn}
+            <button class="action-btn btn-selesai" onclick="updateStatus('${safeId}','Selesai')">✅ Selesai</button>
+            ${paidBtn}
+            <button class="action-btn btn-hapus"   onclick="deleteOrder('${safeId}')">🗑 Hapus</button>
+        </div>
     </div>`;
 }
 
@@ -205,7 +205,7 @@ async function markOrderPaid(orderId) {
         const result = await markPaymentPaid(orderId);
         if (result.status === "ok") {
             const o = currentOrders.find(x => x.id === orderId);
-            if (o) { o.paymentStatus = "Lunas"; o.status = "Selesai"; }
+            if (o) o.paymentStatus = "Lunas";
             renderOrders();
             showAdminToast("✅ Pembayaran dikonfirmasi!");
         } else {

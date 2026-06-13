@@ -210,38 +210,16 @@ async function checkCashierPaymentStatus() {
     } catch (err) { console.error("Gagal cek status pembayaran:", err); }
 }
 
-function showThankYouScreen() {
+function finalizePaymentAndClose() {
     stopCashierPaymentPoll();
-    if (monitorInterval) clearInterval(monitorInterval);
-    document.getElementById("cartModal").style.display = "none";
-    const overlay = document.getElementById("thank-you-overlay");
-    if (overlay) overlay.style.display = "flex";
-}
-
-function closeThankYouAndReset() {
     clearTableSession();
     activeOrderId = null;
     const fab = document.getElementById("orderStatusFab");
     if (fab) fab.style.display = "none";
-    const overlay = document.getElementById("thank-you-overlay");
-    if (overlay) overlay.style.display = "none";
-    location.reload();
-}
-
-function finalizePaymentAndClose() {
-    showThankYouScreen();
-}
-
-async function confirmQrisPayment() {
-    if (!activeOrderId) return;
-    const btn = document.getElementById("qrisConfirmBtn");
-    if (btn) { btn.disabled = true; btn.innerText = "⏳ Memproses..."; }
-    try {
-        await markPaymentPaid(activeOrderId);
-    } catch (e) {
-        console.error("QRIS mark paid error:", e);
-    }
-    showThankYouScreen();
+    _showScreen("cart-screen");
+    document.getElementById("cartModal").style.display = "none";
+    showSuccessPopup("✅ Pembayaran berhasil! Terima kasih.");
+    setTimeout(() => location.reload(), 1800);
 }
 
 function backToOrderStatus() {
