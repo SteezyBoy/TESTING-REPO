@@ -188,9 +188,9 @@
                 </div>
             </div>
             <div id="payOrderId" style="text-align:center;font-size:14px;margin-bottom:10px;color:var(--green);font-weight:600;min-height:22px;"></div>
-            <p class="qris-note">Scan QR code di atas menggunakan mobile banking atau e-wallet</p>
+            <p class="qris-note">Setelah scan dan bayar, tekan <strong>Sudah Bayar</strong> — admin akan otomatis mendeteksi pembayaran Anda.</p>
             <button class="checkout-btn" style="background:#64748b;margin-top:12px;" onclick="backToOrderStatus()">← Back</button>
-            <button class="checkout-btn" style="background:linear-gradient(135deg,var(--green),var(--green2));margin-top:12px;" onclick="finalizePaymentAndClose()">✅ Selesai & Tutup Bill</button>
+            <button id="qrisConfirmBtn" class="checkout-btn" style="background:linear-gradient(135deg,var(--green),var(--green2));margin-top:12px;" onclick="confirmQrisPayment()">✅ Sudah Bayar</button>
         </div>
 
         <!-- Screen 5: Cashier Wait -->
@@ -202,7 +202,7 @@
                 <div id="cashierWaitTotal" style="font-size:24px;font-weight:800;color:var(--accent);margin-bottom:12px;"></div>
                 <div id="cashierWaitStatus" style="font-size:14px;color:var(--text-muted);line-height:1.6;padding:12px;background:var(--surface2);border-radius:12px;"></div>
             </div>
-            <p class="qris-note">Silakan lakukan pembayaran ke kasir. Halaman ini otomatis selesai setelah kasir menekan <strong>Sudah Bayar</strong>.</p>
+            <p class="qris-note">Silakan lakukan pembayaran ke kasir. Halaman terima kasih akan muncul otomatis setelah kasir menekan <strong>Sudah Bayar</strong>.</p>
             <button class="checkout-btn" style="background:#64748b;margin-top:12px;" onclick="closeCashierWaitScreen()">Tutup (tetap menunggu)</button>
         </div>
 
@@ -216,6 +216,24 @@
         <button class="payment-choice-btn qris"    onclick="payWithQRIS()">📱 Bayar via QRIS</button>
         <button class="payment-choice-btn cashier" onclick="payWithCashier()">💰 Bayar ke Kasir</button>
         <button class="payment-choice-btn cancel"  onclick="closePaymentChoiceModal()">Batal</button>
+    </div>
+</div>
+
+<!-- ===== THANK YOU SCREEN ===== -->
+<div id="thank-you-overlay" class="thank-you-overlay" style="display:none;">
+    <div class="thank-you-content">
+        <div class="thank-you-glow"></div>
+        <div class="thank-you-icon-ring">
+            <div class="thank-you-icon">🍃</div>
+        </div>
+        <div class="thank-you-check">✓</div>
+        <h2 class="thank-you-title">Terima Kasih</h2>
+        <p class="thank-you-subtitle">Sudah berkunjung ke</p>
+        <h3 class="thank-you-brand">Heritage Nusantara</h3>
+        <p class="thank-you-message">Kami harap Anda menikmati cita rasa autentik Nusantara.<br>Sampai jumpa kembali!</p>
+        <div class="thank-you-divider"><span>✨</span></div>
+        <p class="thank-you-footer">Authentic Indonesian Cuisine</p>
+        <button class="thank-you-btn" onclick="closeThankYouAndReset()">Kembali ke Menu</button>
     </div>
 </div>
 
