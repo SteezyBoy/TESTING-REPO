@@ -1,3 +1,14 @@
+// Deklarasi State Global agar tidak menyebabkan ReferenceError
+if (typeof menuData === "undefined") {
+    var menuData = { makanan: [], minuman: [], dessert: [] };
+}
+if (typeof currentCategory === "undefined") {
+    var currentCategory = "all";
+}
+if (typeof currentSearchKeyword === "undefined") {
+    var currentSearchKeyword = "";
+}
+
 async function loadMenuFromSheet() {
     const url = getAppsScriptUrl();
     if (!url || url === "https://script.google.com/macros/s/AKfycbzsgvy9iwKfdW4PSY3lKHs1xNAsOTTZYL7NHTfdOI1YBJqi9O_9gzXPaluzJoxK7BYK/exec") {
@@ -100,57 +111,4 @@ function renderMenu() {
             <div class="image-wrapper">
                 ${item.bestSeller ? `<div class="best-seller">🔥 BEST SELLER</div>` : ''}
                 <img src="${item.image}" alt="${item.name}" loading="lazy" class="menu-img"
-                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22240%22><rect fill=%22%23f1f5f9%22 width=%22400%22 height=%22240%22/><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2240%22>🍽️</text></svg>'">
-            </div>
-            <div class="menu-info">
-                <div class="food-tag">${item.category}</div>
-                <h3>${item.name}</h3>
-                <div class="price">${formatPrice(item.price)}</div>
-                <p>${item.desc.substring(0, 80)}${item.desc.length > 80 ? '...' : ''}</p>
-                <div class="card-actions">
-                    <button class="detail-btn" onclick="openModalByName('${safeName}')">View Details</button>
-                    ${item.available !== false ? `<button class="add-to-cart-btn" onclick="openQuickAddPopup('${safeName}')">+ Add To Cart</button>` : '<button class="add-to-cart-btn" style="background:#64748b;cursor:not-allowed;" disabled>❌ Out of Stock</button>'}
-                </div>
-            </div>`;
-        menuList.appendChild(card);
-    });
-}
-
-function showEmptyState(keyword) {
-    const menuList = document.getElementById("menu-list");
-    menuList.innerHTML = `
-    <div class="empty-state">
-        <div class="empty-state-icon">🔍</div>
-        <h3>Menu tidak ditemukan</h3>
-        <p>Tidak ada hasil untuk "<strong>${keyword}</strong>"</p>
-        <button class="empty-state-btn" onclick="clearSearch()">Clear Search</button>
-    </div>`;
-}
-
-function showEmptyCategoryState() {
-    const menuList = document.getElementById("menu-list");
-    menuList.innerHTML = `
-    <div class="empty-state">
-        <div class="empty-state-icon">🍽️</div>
-        <h3>Menu sedang tidak tersedia</h3>
-        <p>Silakan pilih kategori lain atau hubungi staf kami.</p>
-    </div>`;
-}
-
-function clearSearch() {
-    document.getElementById("searchInput").value = "";
-    currentSearchKeyword = "";
-    renderMenu();
-}
-
-function searchMenu() { currentSearchKeyword = document.getElementById("searchInput").value; renderMenu(); }
-function sortMenu() { renderMenu(); }
-function changeCategory(btn, category) {
-    document.querySelectorAll(".category-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentCategory = category;
-    currentSearchKeyword = "";
-    document.getElementById("searchInput").value = "";
-    showSkeletonLoading();
-    setTimeout(() => renderMenu(), 400);
-}
+                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22240%22><rect fill=%22%23f1f5f9%22 width=%22400%22 height=%22240%22/><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2240%22>🍽
