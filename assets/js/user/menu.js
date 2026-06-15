@@ -1,6 +1,6 @@
 async function loadMenuFromSheet() {
     const url = getAppsScriptUrl();
-    if (!url || url === "PASTE_YOUR_APPS_SCRIPT_URL_HERE") {
+    if (!url || url === "https://script.google.com/macros/s/AKfycbzsgvy9iwKfdW4PSY3lKHs1xNAsOTTZYL7NHTfdOI1YBJqi9O_9gzXPaluzJoxK7BYK/exec") {
         console.warn("Apps Script URL not set, using default menu");
         setDefaultMenu();
         return;
