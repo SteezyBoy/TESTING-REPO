@@ -1,55 +1,53 @@
-// --- DEKLARASI AMAN (Mencegah ReferenceError: menuData is not defined) ---
+// --- SISTEM MENU INDEPENDENT RUNNER ---
+
+// Memastikan menuData selalu ada sebagai objek aman
 window.menuData = window.menuData || { makanan: [], minuman: [], dessert: [] };
-window.currentCategory = window.currentCategory || 'all';
-window.currentSearchKeyword = window.currentSearchKeyword || '';
 
-// --- FUNGSI FORMAT HARGA AMAN ---
-function formatPrice(price) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price || 0);
-}
+async function safeRenderMenu() {
+    const container = document.getElementById("menu-list");
+    if (!container) return;
 
-// --- FUNGSI UTAMA RENDER ---
-async function renderMenu() {
-    const menuList = document.getElementById("menu-list");
-    if (!menuList) return;
+    // 1. Data Retrieval: Mengambil data dari variabel global (yang diisi oleh init.js)
+    // Jika menuData kosong, paksa gunakan DEFAULT_MENU_DATA dari default-menu.js
+    let activeData = window.menuData;
+    if ((!activeData.makanan.length && !activeData.minuman.length) && typeof DEFAULT_MENU_DATA !== 'undefined') {
+        activeData = DEFAULT_MENU_DATA;
+    }
 
-    // Ambil data berdasarkan kategori
+    // 2. Filter Kategori (Mencegah error 'all')
+    const cat = (typeof window.currentCategory === 'undefined' || window.currentCategory === 'all') 
+                ? 'all' : window.currentCategory.toLowerCase();
+    
     let items = [];
-    const cat = window.currentCategory.toLowerCase();
-    
     if (cat === 'all') {
-        items = [...(menuData.makanan || []), ...(menuData.minuman || []), ...(menuData.dessert || [])];
+        items = [...(activeData.makanan || []), ...(activeData.minuman || []), ...(activeData.dessert || [])];
     } else {
-        items = menuData[cat] || [];
+        items = activeData[cat] || [];
     }
 
-    // Filter Ketersediaan & Pencarian
-    items = items.filter(i => i.available !== false);
-    if (window.currentSearchKeyword) {
-        items = items.filter(i => i.name.toLowerCase().includes(window.currentSearchKeyword.toLowerCase()));
+    // 3. Render Aman
+    container.innerHTML = "";
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="text-align:center; padding: 40px;">
+                <p>Menu belum tersedia saat ini.</p>
+            </div>`;
+        return;
     }
 
-    // Render HTML
-    menuList.innerHTML = items.length > 0 ? "" : '<p style="text-align:center; padding:20px;">Menu sedang tidak tersedia</p>';
-    
     items.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'menu-card';
+        const div = document.createElement("div");
+        div.className = "menu-card";
         div.innerHTML = `
-            <img src="${item.image || ''}" onerror="this.src='data:image/svg+xml,...'" style="width:100%; height:150px; object-fit:cover;">
-            <h3>${item.name || 'Menu'}</h3>
-            <p>${formatPrice(item.price)}</p>
-            <button onclick="alert('Item ditambahkan')">Tambah</button>
+            <img src="${item.image}" onerror="this.src='data:image/svg+xml,...'" style="width:100%">
+            <h3>${item.name}</h3>
+            <p>${item.price}</p>
         `;
-        menuList.appendChild(div);
+        container.appendChild(div);
     });
 }
 
-// --- INISIALISASI ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Jika API belum load, gunakan data default dari default-menu.js jika ada
-    if (typeof DEFAULT_MENU_DATA !== 'undefined') {
-        window.menuData = JSON.parse(JSON.stringify(DEFAULT_MENU_DATA));
-    }
-    renderMenu();
+// Inisialisasi mandiri
+window.addEventListener('load', () => {
+    setTimeout(safeRenderMenu, 500); // Tunggu semua script lain selesai loading
 });
