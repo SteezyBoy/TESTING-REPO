@@ -1,74 +1,57 @@
-// ========================================================
-// FILE: assets/js/user/menu.js (SAFE VERSION)
-// ========================================================
+// --- FUNGSI PEMBANTU (Mencegah ReferenceError) ---
+if (typeof formatPrice !== 'function') {
+    window.formatPrice = function(val) {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+    };
+}
 
-async function loadMenuFromSheet() {
-    // Memastikan API URL tersedia
-    const url = (typeof getAppsScriptUrl === 'function') ? getAppsScriptUrl() : null;
-    if (!url || url.includes("PASTE")) {
-        setDefaultMenu();
+// --- LOGIKA UTAMA ---
+async function renderMenu() {
+    const menuList = document.getElementById("menu-list");
+    if (!menuList) return;
+
+    // Pastikan menuData sudah ada
+    if (typeof menuData === 'undefined') {
+        console.error("menuData tidak ditemukan!");
         return;
     }
-    
-    try {
-        const res = await fetch(url + "?action=getMenu");
-        const data = await res.json();
-        if (data && data.menu) {
-            // Transformasi data agar sesuai dengan struktur internal
-            menuData = { makanan: [], minuman: [], dessert: [] };
-            data.menu.forEach(item => {
-                const cat = (item.category || "").toLowerCase();
-                const key = (cat.includes("minuman") || cat.includes("beverage")) ? "minuman" : 
-                            (cat.includes("dessert")) ? "dessert" : "makanan";
-                menuData[key].push(item);
-            });
-        } else {
-            setDefaultMenu();
-        }
-    } catch (e) {
-        setDefaultMenu();
-    }
-}
 
-function setDefaultMenu() {
-    if (typeof DEFAULT_MENU_DATA !== "undefined") {
-        menuData = JSON.parse(JSON.stringify(DEFAULT_MENU_DATA));
-    }
-}
-
-function renderMenu() {
-    // 1. Ambil data dengan aman
-    const list = document.getElementById("menu-list");
-    if (!list) return;
-
-    // 2. Tentukan item berdasarkan kategori
+    // Ambil semua item dari semua kategori jika "all"
     let items = [];
-    if (typeof currentCategory === "undefined" || currentCategory === "all") {
+    const cat = (typeof currentCategory === 'undefined') ? 'all' : currentCategory;
+    
+    if (cat === 'all') {
         items = [...(menuData.makanan || []), ...(menuData.minuman || []), ...(menuData.dessert || [])];
     } else {
-        items = menuData[currentCategory] || [];
+        items = menuData[cat] || [];
     }
 
-    // 3. Filter Aman
-    items = items.filter(i => i.available !== false);
+    menuList.innerHTML = "";
+    
+    if (items.length === 0) {
+        menuList.innerHTML = '<p style="text-align:center; padding:20px;">Menu sedang tidak tersedia</p>';
+        return;
+    }
 
-    // 4. Render dengan Error Handling
-    list.innerHTML = "";
     items.forEach(item => {
-        const card = document.createElement("div");
-        card.className = "menu-card";
-        // Menggunakan string murni untuk menghindari error fungsi yang tidak terdefinisi
-        card.innerHTML = `
+        const div = document.createElement('div');
+        div.className = 'menu-card';
+        div.innerHTML = `
+            <img src="${item.image || ''}" onerror="this.src='data:image/svg+xml,...'" style="width:100%; height:150px; object-fit:cover;">
             <h3>${item.name || 'Menu'}</h3>
-            <p>${item.price || 0}</p>
-            <button onclick="console.log('Clicked ${item.name}')">Add to Cart</button>
+            <p>${formatPrice(item.price || 0)}</p>
+            <button onclick="console.log('Added ${item.name}')">Tambah</button>
         `;
-        list.appendChild(card);
+        menuList.appendChild(div);
     });
 }
 
-// Inisialisasi
+// Inisialisasi sederhana tanpa dependensi rumit
 document.addEventListener('DOMContentLoaded', () => {
-    if (typeof menuData === "undefined") setDefaultMenu();
-    renderMenu();
+    // Paksa load menu agar muncul
+    if (typeof loadMenuFromSheet === 'function') {
+        loadMenuFromSheet().then(() => renderMenu());
+    } else {
+        renderMenu();
+    }
 });
