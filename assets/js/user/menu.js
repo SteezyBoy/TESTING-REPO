@@ -41,7 +41,7 @@ async function loadMenuFromSheet() {
             const totalItems = newMenu.makanan.length + newMenu.minuman.length + newMenu.dessert.length;
             if (totalItems > 0) {
                 menuData = newMenu;
-                console.log("Menu loaded from API:", totalItems, "items");
+                //console.log("Menu loaded from API:", totalItems, "items");
                 renderMenu(); // Refresh tampilan dengan data API
             } else {
                 console.warn("API menu kosong, tetap pakai default");
