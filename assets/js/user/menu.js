@@ -95,11 +95,37 @@ function normalizeMenuRow(item) {
 // ----------------------------------------------------------------
 // Bangun ulang seluruh struktur { makanan, minuman, dessert } dari
 // array mentah hasil API. Tidak pernah melempar exception keluar.
+// Selain hasil yang valid, fungsi ini juga mengembalikan "rawCounts"
+// (berapa baris MENTAH -- sebelum divalidasi -- yang termasuk
+// kategori tsb). Ini penting untuk membedakan dua situasi yang beda:
+//   a) Kategori memang kosong di Sheet (admin sengaja hapus semua) ->
+//      rawCounts[kategori] === 0 -> wajar, ikut data API apa adanya.
+//   b) Kategori ADA barisnya di Sheet tapi semuanya gagal validasi
+//      (nama/harga rusak/format aneh) -> rawCounts[kategori] > 0 tapi
+//      hasil valid = 0 -> ini tanda ada masalah data, BUKAN tanda
+//      kategori itu memang harus kosong. Kategori lama harus
+//      dipertahankan, jangan ditimpa jadi kosong.
 // ----------------------------------------------------------------
 function buildMenuFromRawList(rawList) {
-    const result  = { makanan: [], minuman: [], dessert: [] };
-    let skipped    = 0;
+    const result     = { makanan: [], minuman: [], dessert: [] };
+    const rawCounts   = { makanan: 0, minuman: 0, dessert: 0 };
+    let skipped       = 0;
+
     rawList.forEach(rawItem => {
+        // Hitung kategori mentahnya dulu (terlepas dari valid/tidaknya nama & harga)
+        try {
+            if (rawItem && typeof rawItem === "object") {
+                const rawCat = String(rawItem.category || "").trim();
+                const first  = (rawCat.split("|")[0] || "").trim().toLowerCase();
+                let key;
+                if (first === "makanan" || first === "food") key = "makanan";
+                else if (first === "minuman" || first === "beverage" || first === "drink" || first === "drinks" || first === "minum") key = "minuman";
+                else if (first === "dessert" || first === "desserts" || first === "penutup") key = "dessert";
+                else key = "makanan";
+                rawCounts[key]++;
+            }
+        } catch (e) { /* abaikan, tidak kritikal */ }
+
         const normalized = normalizeMenuRow(rawItem);
         if (normalized) {
             result[normalized.categoryKey].push(normalized.data);
@@ -110,12 +136,38 @@ function buildMenuFromRawList(rawList) {
     if (skipped > 0) {
         console.warn(`[menu] ${skipped} baris menu dari API diabaikan (data tidak lengkap/tidak valid).`);
     }
-    return result;
+    return { result, rawCounts };
 }
 
 function countMenuItems(menu) {
     if (!menu) return 0;
     return (menu.makanan?.length || 0) + (menu.minuman?.length || 0) + (menu.dessert?.length || 0);
+}
+
+// ----------------------------------------------------------------
+// Gabungkan hasil API dengan menu yang sedang tampil, PER KATEGORI.
+// Aturannya:
+//   - Kategori dengan item valid dari API  -> pakai data API (terbaru).
+//   - Kategori kosong di API & memang tidak ada barisnya di Sheet
+//     (rawCounts == 0)                     -> ikuti API (kosong, valid).
+//   - Kategori kosong di API TAPI sheet punya barisnya (rawCounts > 0,
+//     cuma semua gagal validasi)           -> JANGAN ditimpa, pakai
+//     data lama (default/sebelumnya) supaya kategori itu tidak
+//     "hilang" padahal sebenarnya cuma masalah format data.
+// ----------------------------------------------------------------
+function mergeMenuPerCategory(currentMenu, apiResult, rawCounts) {
+    const merged = { makanan: [], minuman: [], dessert: [] };
+    ["makanan", "minuman", "dessert"].forEach(key => {
+        if (apiResult[key] && apiResult[key].length > 0) {
+            merged[key] = apiResult[key];
+        } else if (rawCounts[key] === 0) {
+            merged[key] = []; // memang kosong di Sheet, sah-sah saja
+        } else {
+            merged[key] = currentMenu[key] || []; // pertahankan data lama, hindari hilang
+            console.warn(`[menu] Kategori "${key}" ada di Sheet tapi semua barisnya gagal divalidasi -> tetap pakai data lama untuk kategori ini.`);
+        }
+    });
+    return merged;
 }
 
 // ----------------------------------------------------------------
@@ -175,18 +227,29 @@ async function loadMenuFromSheet() {
             return;
         }
 
-        const newMenu    = buildMenuFromRawList(data.menu);
-        const totalItems = countMenuItems(newMenu);
+        const { result: apiMenu, rawCounts } = buildMenuFromRawList(data.menu);
+        const totalValidFromApi = countMenuItems(apiMenu);
 
-        if (totalItems === 0) {
-            console.warn("[menu] Semua baris dari API tidak valid setelah divalidasi, tetap pakai menu yang sedang tampil.");
+        if (totalValidFromApi === 0 && rawCounts.makanan === 0 && rawCounts.minuman === 0 && rawCounts.dessert === 0) {
+            console.warn("[menu] Tidak ada baris dari API yang bisa dikenali kategorinya, tetap pakai menu yang sedang tampil.");
+            return;
+        }
+
+        // Gabungkan per kategori: kategori yang valid dari API dipakai,
+        // kategori yang "gagal validasi tapi sebenarnya ada datanya di Sheet"
+        // TETAP memakai data lama supaya tidak hilang.
+        const merged = mergeMenuPerCategory(menuData, apiMenu, rawCounts);
+        const totalMerged = countMenuItems(merged);
+
+        if (totalMerged === 0) {
+            console.warn("[menu] Hasil gabungan menu kosong total, tetap pakai menu yang sedang tampil.");
             return;
         }
 
         // Data baru lolos validasi -> aman untuk dipakai
         lastKnownGoodMenu = menuData; // simpan yang lama sebagai cadangan
-        menuData = newMenu;
-        console.log(`[menu] Menu berhasil dimuat dari API: ${totalItems} item.`);
+        menuData = merged;
+        console.log(`[menu] Menu diperbarui dari API: ${totalValidFromApi} item valid dari API, total tampil sekarang ${totalMerged} item.`);
         safeRenderMenu();
     } catch (err) {
         if (err && err.name === "AbortError") {
