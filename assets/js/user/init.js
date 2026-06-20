@@ -10,6 +10,25 @@ function applyDarkMode() {
     if (icon) icon.textContent = isDarkMode ? "☀️" : "🌙";
 }
 
+// ================================================================
+// JALUR BARU pemanggilan menu makanan saat halaman dibuka.
+// Urutan ini SENGAJA dipisah jadi fungsi sendiri (initMenuPipeline)
+// supaya bisa dipanggil ulang kapan pun (misalnya dari tombol reload)
+// tanpa harus reload seluruh halaman.
+// ================================================================
+async function initMenuPipeline() {
+    // 1) Tampilkan menu default DULU, instan, tanpa menunggu apa pun.
+    //    Ini memastikan user tidak pernah melihat halaman kosong.
+    setDefaultMenu();
+    safeRenderMenu();
+
+    // 2) Baru setelah itu, coba ambil menu terbaru dari Google Sheet.
+    //    Kalau gagal/timeout/data rusak, menu default di atas TETAP tampil
+    //    (lihat loadMenuFromSheet & safeRenderMenu di menu.js untuk detail
+    //    proteksinya).
+    await loadMenuFromSheet();
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
     applyDarkMode();
     tableNumber = getTableNumber();
@@ -20,15 +39,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     loadCartFromLocal();
 
-    // ✅ TAMPILKAN DEFAULT MENU DULU (tanpa skeleton loading yang menghapus)
-    setDefaultMenu();
-    renderMenu();
-
-    // ✅ LOAD DARI API TANPA MENGHAPUS MENU YANG SUDAH TAMPIL
-    // Jangan gunakan showSkeletonLoading() di sini karena akan menghapus menu default
-    await loadMenuFromSheet(); // Ini akan update menuData dan render ulang jika berhasil
-    
-    // Jika API gagal, menu default tetap tampil (sudah ada)
+    await initMenuPipeline();
 
     if (activeOrderId) {
         await resumeActiveOrderIfNeeded();
