@@ -9,14 +9,18 @@
 //      menggantung dan membuat halaman terasa "kosong".
 //   3. Setiap baris/item dari Sheet diproses satu-satu dengan
 //      try/catch sendiri. Satu baris data yang rusak TIDAK akan
-//      menjatuhkan/mengosongkan seluruh menu.
+//      menjatuhkan/mengosongkan seluruh menu (ini akar masalah lama:
+//      kalau satu item error, seluruh proses render berhenti di
+//      tengah jalan padahal list sudah dikosongkan duluan).
 //   4. Sebelum menu lama ditimpa data baru, data baru itu divalidasi
 //      dulu secara menyeluruh. Kalau tidak valid/kosong -> data lama
-//      tidak disentuh sama sekali.
+//      (yang sudah terbukti tampil) tidak disentuh sama sekali.
 //   5. Ada "penanda generasi" (renderGeneration) untuk mencegah race
-//      condition antara ganti kategori (tab) dan proses load API.
-//   6. Ada watchdog untuk mengulang render jika DOM ternyata kosong.
-//   7. SUMBER FOTO DIPAKSA LOKAL (Hanya dari folder images/ GitHub).
+//      condition antara ganti kategori (tab) dan proses load API
+//      yang selesai di waktu yang hampir bersamaan.
+//   6. Ada watchdog: kalau setelah render ternyata DOM menu-list
+//      kosong padahal seharusnya ada isinya, sistem otomatis
+//      mencoba render ulang dari data yang masih valid.
 // ================================================================
 
 let renderGeneration = 0;          // dipakai untuk membatalkan render basi
@@ -36,28 +40,10 @@ function parsePriceValue(raw) {
 }
 
 // ----------------------------------------------------------------
-// Util: Memaksa sumber foto hanya dari folder images/ di GitHub
-// Mengamankan aplikasi dari link Google Drive yang rusak/blank
-// ----------------------------------------------------------------
-function getLocalImage(menuName, apiImage) {
-    // Jika data API sudah berupa format lokal (cth: "images/..."), gunakan itu
-    if (apiImage && apiImage.startsWith("images/")) return apiImage;
-
-    // Cari kecocokan foto di DEFAULT_MENU_DATA yang sudah terbukti valid jalurnya
-    if (typeof DEFAULT_MENU_DATA !== "undefined") {
-        for (const cat in DEFAULT_MENU_DATA) {
-            const found = DEFAULT_MENU_DATA[cat].find(m => m.name.toLowerCase() === menuName.toLowerCase());
-            if (found && found.image) return found.image;
-        }
-    }
-    
-    // Fallback: Bentuk jalur secara manual berdasarkan nama (contoh: "images/KLEPON.jpeg")
-    return "images/" + menuName.toUpperCase() + ".jpeg";
-}
-
-// ----------------------------------------------------------------
 // Util: normalisasi 1 baris data menu mentah dari API jadi item
 // siap pakai, atau null kalau datanya memang tidak layak ditampilkan.
+// Dibungkus try/catch sendiri supaya 1 baris rusak tidak pernah bisa
+// menjatuhkan proses parsing baris-baris lainnya.
 // ----------------------------------------------------------------
 function normalizeMenuRow(item) {
     try {
@@ -69,7 +55,7 @@ function normalizeMenuRow(item) {
         const price = parsePriceValue(item.price);
         if (!isFinite(price) || price < 0) return null; // harga tidak valid
 
-        // Format kategori
+        // Format kategori bisa "makanan|Appetizer" (baru) atau cuma "makanan"/"Appetizer" (lama)
         const rawCat = String(item.category || "").trim();
         const parts  = rawCat.split("|").map(s => s.trim()).filter(Boolean);
         const first  = (parts[0] || "").toLowerCase();
@@ -84,11 +70,9 @@ function normalizeMenuRow(item) {
         } else if (first === "dessert" || first === "desserts" || first === "penutup") {
             categoryKey = "dessert";
         } else {
+            // Kategori asing/lama (Appetizer, Soup, Main Course, dll) selalu masuk "makanan"
             categoryKey = "makanan";
         }
-
-        // Terapkan fungsi pemaksaan gambar lokal
-        const finalImage = getLocalImage(name, typeof item.image === "string" ? item.image : "");
 
         return {
             categoryKey,
@@ -96,7 +80,7 @@ function normalizeMenuRow(item) {
                 name,
                 category: displayLabel,
                 bestSeller: item.bestSeller === true || item.bestSeller === "true",
-                image: finalImage,
+                image: typeof item.image === "string" ? item.image : "",
                 desc: typeof item.desc === "string" ? item.desc : "",
                 price,
                 available: item.available !== false && item.available !== "false"
@@ -109,14 +93,26 @@ function normalizeMenuRow(item) {
 }
 
 // ----------------------------------------------------------------
-// Bangun ulang seluruh struktur { makanan, minuman, dessert }
+// Bangun ulang seluruh struktur { makanan, minuman, dessert } dari
+// array mentah hasil API. Tidak pernah melempar exception keluar.
+// Selain hasil yang valid, fungsi ini juga mengembalikan "rawCounts"
+// (berapa baris MENTAH -- sebelum divalidasi -- yang termasuk
+// kategori tsb). Ini penting untuk membedakan dua situasi yang beda:
+//   a) Kategori memang kosong di Sheet (admin sengaja hapus semua) ->
+//      rawCounts[kategori] === 0 -> wajar, ikut data API apa adanya.
+//   b) Kategori ADA barisnya di Sheet tapi semuanya gagal validasi
+//      (nama/harga rusak/format aneh) -> rawCounts[kategori] > 0 tapi
+//      hasil valid = 0 -> ini tanda ada masalah data, BUKAN tanda
+//      kategori itu memang harus kosong. Kategori lama harus
+//      dipertahankan, jangan ditimpa jadi kosong.
 // ----------------------------------------------------------------
 function buildMenuFromRawList(rawList) {
     const result     = { makanan: [], minuman: [], dessert: [] };
-    const rawCounts  = { makanan: 0, minuman: 0, dessert: 0 };
-    let skipped      = 0;
+    const rawCounts   = { makanan: 0, minuman: 0, dessert: 0 };
+    let skipped       = 0;
 
     rawList.forEach(rawItem => {
+        // Hitung kategori mentahnya dulu (terlepas dari valid/tidaknya nama & harga)
         try {
             if (rawItem && typeof rawItem === "object") {
                 const rawCat = String(rawItem.category || "").trim();
@@ -149,7 +145,15 @@ function countMenuItems(menu) {
 }
 
 // ----------------------------------------------------------------
-// Gabungkan hasil API dengan menu yang sedang tampil
+// Gabungkan hasil API dengan menu yang sedang tampil, PER KATEGORI.
+// Aturannya:
+//   - Kategori dengan item valid dari API  -> pakai data API (terbaru).
+//   - Kategori kosong di API & memang tidak ada barisnya di Sheet
+//     (rawCounts == 0)                     -> ikuti API (kosong, valid).
+//   - Kategori kosong di API TAPI sheet punya barisnya (rawCounts > 0,
+//     cuma semua gagal validasi)           -> JANGAN ditimpa, pakai
+//     data lama (default/sebelumnya) supaya kategori itu tidak
+//     "hilang" padahal sebenarnya cuma masalah format data.
 // ----------------------------------------------------------------
 function mergeMenuPerCategory(currentMenu, apiResult, rawCounts) {
     const merged = { makanan: [], minuman: [], dessert: [] };
@@ -157,9 +161,9 @@ function mergeMenuPerCategory(currentMenu, apiResult, rawCounts) {
         if (apiResult[key] && apiResult[key].length > 0) {
             merged[key] = apiResult[key];
         } else if (rawCounts[key] === 0) {
-            merged[key] = []; 
+            merged[key] = []; // memang kosong di Sheet, sah-sah saja
         } else {
-            merged[key] = currentMenu[key] || []; 
+            merged[key] = currentMenu[key] || []; // pertahankan data lama, hindari hilang
             console.warn(`[menu] Kategori "${key}" ada di Sheet tapi semua barisnya gagal divalidasi -> tetap pakai data lama untuk kategori ini.`);
         }
     });
@@ -167,7 +171,8 @@ function mergeMenuPerCategory(currentMenu, apiResult, rawCounts) {
 }
 
 // ----------------------------------------------------------------
-// fetch dengan timeout
+// fetch dengan timeout, supaya request yang menggantung tidak bikin
+// halaman terasa "freeze" / menu hilang tanpa kejelasan.
 // ----------------------------------------------------------------
 async function fetchWithTimeout(url, timeoutMs = 10000) {
     const controller = new AbortController();
@@ -182,24 +187,25 @@ async function fetchWithTimeout(url, timeoutMs = 10000) {
 
 // ----------------------------------------------------------------
 // JALUR UTAMA: load menu dari Google Sheet via Apps Script.
-// Mengembalikan boolean (true/false) agar sinkron dengan init.js
+// Menu default TIDAK PERNAH dihapus kecuali data baru dari API
+// sudah lolos validasi penuh (totalItems > 0).
 // ----------------------------------------------------------------
 async function loadMenuFromSheet() {
-    if (isMenuApiLoading) return false; 
+    if (isMenuApiLoading) return; // cegah fetch dobel kalau dipanggil ulang cepat
     isMenuApiLoading = true;
 
     const url = getAppsScriptUrl();
     if (!url) {
         console.warn("[menu] Apps Script URL belum diset, tetap pakai menu default.");
         isMenuApiLoading = false;
-        return false;
+        return;
     }
 
     try {
         const res = await fetchWithTimeout(url + "?action=getMenu", 10000);
         if (!res.ok) {
             console.warn(`[menu] API merespon status ${res.status}, tetap pakai menu yang sedang tampil.`);
-            return false;
+            return;
         }
 
         const text = await res.text();
@@ -207,47 +213,50 @@ async function loadMenuFromSheet() {
         try {
             data = JSON.parse(text);
         } catch (parseErr) {
-            console.error("[menu] Respons API bukan JSON valid, tetap pakai menu yang sedang tampil.");
-            return false;
+            console.error("[menu] Respons API bukan JSON valid, tetap pakai menu yang sedang tampil. Cuplikan respons:", text.substring(0, 200));
+            return;
         }
 
         if (!data || !Array.isArray(data.menu)) {
-            console.warn("[menu] Format respons API tidak sesuai.");
-            return false;
+            console.warn("[menu] Format respons API tidak sesuai (field 'menu' tidak ada/bukan array), tetap pakai menu yang sedang tampil.");
+            return;
         }
 
         if (data.menu.length === 0) {
-            console.warn("[menu] Sheet menu kosong di server.");
-            return false;
+            console.warn("[menu] Sheet menu kosong di server, tetap pakai menu yang sedang tampil.");
+            return;
         }
 
         const { result: apiMenu, rawCounts } = buildMenuFromRawList(data.menu);
         const totalValidFromApi = countMenuItems(apiMenu);
 
         if (totalValidFromApi === 0 && rawCounts.makanan === 0 && rawCounts.minuman === 0 && rawCounts.dessert === 0) {
-            console.warn("[menu] Tidak ada baris dari API yang bisa dikenali kategorinya.");
-            return false;
+            console.warn("[menu] Tidak ada baris dari API yang bisa dikenali kategorinya, tetap pakai menu yang sedang tampil.");
+            return;
         }
 
+        // Gabungkan per kategori: kategori yang valid dari API dipakai,
+        // kategori yang "gagal validasi tapi sebenarnya ada datanya di Sheet"
+        // TETAP memakai data lama supaya tidak hilang.
         const merged = mergeMenuPerCategory(menuData, apiMenu, rawCounts);
         const totalMerged = countMenuItems(merged);
 
         if (totalMerged === 0) {
-            console.warn("[menu] Hasil gabungan menu kosong total.");
-            return false;
+            console.warn("[menu] Hasil gabungan menu kosong total, tetap pakai menu yang sedang tampil.");
+            return;
         }
 
-        lastKnownGoodMenu = menuData; 
+        // Data baru lolos validasi -> aman untuk dipakai
+        lastKnownGoodMenu = menuData; // simpan yang lama sebagai cadangan
         menuData = merged;
         console.log(`[menu] Menu diperbarui dari API: ${totalValidFromApi} item valid dari API, total tampil sekarang ${totalMerged} item.`);
-        return true; 
+        safeRenderMenu();
     } catch (err) {
         if (err && err.name === "AbortError") {
-            console.error("[menu] Fetch ke API timeout (>10s).");
+            console.error("[menu] Fetch ke API timeout (>10s), tetap pakai menu yang sedang tampil.");
         } else {
-            console.error("[menu] Gagal fetch menu dari API:", err);
+            console.error("[menu] Gagal fetch menu dari API, tetap pakai menu yang sedang tampil:", err);
         }
-        return false;
     } finally {
         isMenuApiLoading = false;
     }
@@ -264,15 +273,13 @@ function setDefaultMenu() {
 }
 
 // ----------------------------------------------------------------
-// Dipanggil manual oleh user lewat tombol "Reload Menu" 
+// Dipanggil manual oleh user lewat tombol "Reload Menu" kalau-kalau
+// menu pernah gagal tampil. Tidak menghapus apa pun, cuma mengulang
+// proses load dari awal.
 // ----------------------------------------------------------------
 async function reloadMenuManually() {
     showShareToast("🔄 Memuat ulang menu...");
-    const isSuccess = await loadMenuFromSheet();
-    if (!isSuccess && countMenuItems(menuData) === 0) {
-        setDefaultMenu();
-    }
-    safeRenderMenu();
+    await loadMenuFromSheet();
     showShareToast("✅ Menu diperbarui");
 }
 
@@ -293,6 +300,9 @@ function getFilteredAndSortedItems() {
 
 // ----------------------------------------------------------------
 // safeRenderMenu(): pembungkus renderMenu() yang anti-gagal-total.
+// Kalau renderMenu() melempar error apa pun, sistem otomatis
+// mencoba pulih (rollback ke data terakhir yang valid) daripada
+// membiarkan menu-list kosong begitu saja.
 // ----------------------------------------------------------------
 function safeRenderMenu() {
     const myGeneration = ++renderGeneration;
@@ -310,8 +320,10 @@ function safeRenderMenu() {
         }
     }
 
+    // Watchdog: pastikan render yang berjalan masih yang paling baru
+    // (mencegah race condition saat ganti kategori cepat-cepat).
     requestAnimationFrame(() => {
-        if (myGeneration !== renderGeneration) return; 
+        if (myGeneration !== renderGeneration) return; // sudah ada render lebih baru, abaikan
         const menuList = document.getElementById("menu-list");
         const expectedItems = getFilteredAndSortedItems().length;
         if (menuList && expectedItems > 0 && menuList.children.length === 0) {
@@ -342,11 +354,14 @@ function renderMenu() {
             const card = buildMenuCardElement(item, index);
             if (card) fragment.appendChild(card);
         } catch (err) {
+            // Satu kartu gagal dibangun TIDAK boleh menghentikan kartu lainnya.
             console.warn("[menu] Gagal membangun kartu menu untuk item, dilewati:", item, err);
         }
     });
     menuList.appendChild(fragment);
 
+    // Kalau ternyata semua item gagal dibangun (kasus ekstrem), tampilkan
+    // empty state yang ramah daripada layar putih kosong.
     if (menuList.children.length === 0) {
         showEmptyCategoryState();
     }
@@ -420,11 +435,15 @@ function changeCategory(btn, category) {
     const searchInput = document.getElementById("searchInput");
     if (searchInput) searchInput.value = "";
 
+    // Skeleton loading tetap dipakai (fitur lama dipertahankan), tapi sekarang
+    // diberi "penanda generasi" sendiri supaya kalau ada proses lain (misalnya
+    // loadMenuFromSheet selesai di waktu yang hampir sama, atau user klik tab
+    // lain dengan cepat) tidak saling menimpa / membuat menu hilang.
     showSkeletonLoading();
     const myGeneration = ++renderGeneration;
     setTimeout(() => {
-        if (myGeneration !== renderGeneration) return; 
-        renderGeneration--; 
+        if (myGeneration !== renderGeneration) return; // sudah ada aksi lebih baru, batalkan render basi ini
+        renderGeneration--; // biar safeRenderMenu() di bawah yang menentukan generasi final
         safeRenderMenu();
     }, 200);
 }

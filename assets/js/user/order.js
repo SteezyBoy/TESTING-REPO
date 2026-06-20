@@ -3,17 +3,11 @@
  * Menangani pengiriman keranjang ke backend dan transisi ke halaman status pesanan.
  */
 
-function sendOrderAndMonitor(customerInfo) { // Hapus argumen cartData
-    // AMBIL DATA TERBARU dari fungsi global
-    const cartData = getCartData(); 
-
+function sendOrderAndMonitor(cartData, customerInfo) {
     if (!cartData || cartData.length === 0) {
-        Swal.fire({ icon: 'error', title: 'Oops...', text: 'Keranjang Anda kosong!' });
+        alert("Keranjang pesanan Anda masih kosong!");
         return;
     }
-    
-    // ... sisa kode pengiriman Anda tetap sama ...
-}
 
     // Ubah tombol menjadi loading state
     const submitBtn = document.getElementById('btnSubmitOrder');
