@@ -115,10 +115,8 @@ header {
     padding: 15px;
     margin-top: -35px;
     position: relative; z-index: 10;
-    display: flex; gap: 10px; align-items: stretch;
 }
 .search-wrapper input {
-    flex: 1; min-width: 0;
     width: 100%; border: none; padding: 16px; border-radius: 18px;
     background: var(--surface); color: var(--text-primary);
     font-size: 15px; box-shadow: var(--shadow-md); outline: none;
@@ -128,15 +126,6 @@ header {
 .search-wrapper input:focus {
     box-shadow: 0 8px 25px rgba(255,84,0,0.15), 0 0 0 2px rgba(255,84,0,0.15);
 }
-.reload-menu-btn {
-    flex-shrink: 0;
-    width: 50px; border: none; border-radius: 18px;
-    background: var(--surface); color: var(--text-primary);
-    font-size: 19px; box-shadow: var(--shadow-md); cursor: pointer;
-    transition: var(--transition);
-}
-.reload-menu-btn:hover { transform: rotate(90deg); }
-.reload-menu-btn:active { transform: rotate(180deg) scale(0.92); }
 
 .sort-wrapper {
     padding: 0 15px 15px;
