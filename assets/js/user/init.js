@@ -16,17 +16,24 @@ function applyDarkMode() {
 // supaya bisa dipanggil ulang kapan pun (misalnya dari tombol reload)
 // tanpa harus reload seluruh halaman.
 // ================================================================
+// ================================================================
+// JALUR BARU: Pipeline Menu Anti-Double Render & Flicker
+// ================================================================
 async function initMenuPipeline() {
-    // 1) Tampilkan menu default DULU, instan, tanpa menunggu apa pun.
-    //    Ini memastikan user tidak pernah melihat halaman kosong.
-    setDefaultMenu();
-    safeRenderMenu();
+    // 1. Tampilkan skeleton loading (jika ada) saat menunggu proses
+    if (typeof showSkeletonLoading === "function") showSkeletonLoading();
 
-    // 2) Baru setelah itu, coba ambil menu terbaru dari Google Sheet.
-    //    Kalau gagal/timeout/data rusak, menu default di atas TETAP tampil
-    //    (lihat loadMenuFromSheet & safeRenderMenu di menu.js untuk detail
-    //    proteksinya).
-    await loadMenuFromSheet();
+    // 2. Ambil data menu dari API/Sheet. Fungsi ini sekarang me-return true/false
+    const isApiSuccess = await loadMenuFromSheet();
+
+    // 3. Jika API gagal, timeout, atau kosong -> gunakan Default Menu Lokal
+    if (!isApiSuccess) {
+        console.log("[menu] API kosong/gagal, menggunakan menu default lokal.");
+        setDefaultMenu();
+    }
+
+    // 4. Render DOM hanya SEKALI di akhir proses (mencegah kedip / hilang)
+    safeRenderMenu();
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
