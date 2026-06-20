@@ -85,6 +85,15 @@ function clearCart() {
         updateCart();
     }
 }
+// Tambahkan fungsi ini di cart.js agar order.js bisa mengambil data terbaru
+function getCartData() {
+    // Selalu ambil dari localStorage untuk memastikan data paling aktual
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+        return JSON.parse(savedCart);
+    }
+    return typeof cart !== "undefined" ? cart : [];
+}
 
 function openCart() {
     updateCart();
