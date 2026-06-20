@@ -13,7 +13,7 @@ function switchTab(name, btn) {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     document.getElementById("panel-" + name).classList.add("active");
     btn.classList.add("active");
-    if (name === "menu")   renderAdminMenu();
+    if (name === "menu")   loadAdminMenu();
     if (name === "stats")  loadStats();
 }
 
